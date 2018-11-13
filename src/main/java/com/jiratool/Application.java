@@ -2,35 +2,106 @@ package com.jiratool;
 
 import com.google.common.io.Files;
 import com.jiratool.command.Command;
+import com.jiratool.command.LogIn;
+import com.jiratool.command.LogTime;
+import com.jiratool.util.CommonUtils;
+import com.sun.jersey.json.impl.provider.entity.JSONArrayProvider;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
 
 public class Application {
 
+    private static final String PROPERTIES_FILE = "global.properties";
+
     public static void main(String[] args) {
-        if (args.length < 0) {
-            throw new IllegalArgumentException();
-        }
+        System.out.println("[INFO] Jira Tool v.0.1 started.");
+        validateInput(args);
+        System.out.println("[INFO] Argument(-s) are valid.");
+        loadProperties();
+        System.out.println("[INFO] Global properties loaded successfully.");
+        List<String> commandList = new ArrayList<>();
+        loadCommandFile(commandList, args[0]);
+        System.out.println("[INFO] Commands loaded successfully.");
+        List<Command> commandObjectList = new ArrayList<>();
+        initCommands(commandObjectList, commandList);
+        System.out.println("[INFO] Commands initialized successfully.");
+        Thread commandsExecutorThread = new Thread(() -> commandObjectList.forEach(Command::execute));
+        commandsExecutorThread.setName("commandsExecutorThread");
+        System.out.println("[INFO] Commands will be executed now!!!");
+        commandsExecutorThread.start();
 
-        List<String> commands = null;
-        try {
-            commands = Files.readLines(new File(args[0]), Charset.defaultCharset());
-        } catch (IOException e) {
-            e.printStackTrace();
-            return;
-        }
-
-        if (commands == null) {
-            throw new IllegalArgumentException("Commands file initialization problem");
-        }
-
-        List<Command> parsedCommands = initCommands(commands);
     }
 
-    private static List<Command> initCommands(List<String> commands) {
-        return null;
+    private static void validateInput(String[] args) {
+        if (args.length == 0) {
+            printHintAndExit();
+        }
+    }
+
+    private static void printHintAndExit() {
+        System.err.println("[ERROR] Path to commands file was expected.");
+        System.err.println("[INFO] Closing application...");
+        System.exit(-1);
+    }
+
+    private static void loadProperties() {
+        try {
+            InputStream is = new Object().getClass().getResourceAsStream(PROPERTIES_FILE);
+            if (is == null) {
+                is = new FileInputStream(new File("C:\\Users\\atomin\\IdeaProjects\\jiratool\\src\\main\\resources\\global.properties"));
+            }
+            System.getProperties().load(is);
+        } catch (IOException e) {
+            onFatalError(e);
+        }
+    }
+
+    private static void loadCommandFile(List<String> toFill, String path) {
+        if (toFill == null) {
+            toFill = new ArrayList<>();
+        }
+        try {
+            if( !toFill.addAll(Files.readLines(new File(path), Charset.defaultCharset()))) {
+                System.err.println("[ERROR] Can't load commands file");
+                throw new IOException("Can't load commands file");
+            }
+        } catch (IOException e) {
+            onFatalError(e);
+        }
+    }
+
+    private static void initCommands(List<Command> toFill, List<String> commands) {
+        if (toFill == null) {
+            toFill = new ArrayList<>();
+        }
+        for (int i = 0; i < commands.size(); i++) {
+            String[] line = commands.get(i).split(" ");
+            toFill.add(initCommand(line[0].trim(), line[1].trim(), i + 1));
+        }
+    }
+
+    private static Command initCommand(String command, String data, int line) {
+        switch (command.toLowerCase()) {
+            case "login" : return new LogIn(data);
+            //case "logtime" : return new LogTime(data);
+            default: return () ->
+                System.out.println(
+                        String.format("[WARN] Unknown command executed: {line=%d;command=%s;data=%s}", line, command, data));
+        }
+    }
+
+    private static <T extends Throwable> void onFatalError(T fatalError) {
+        System.err.println("[FATAL] Cant load default properties");
+        fatalError.printStackTrace();
+        System.err.println("[INFO] Closing application...");
+        System.exit(-1);
     }
 }

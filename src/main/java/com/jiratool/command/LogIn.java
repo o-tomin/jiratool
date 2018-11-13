@@ -1,13 +1,18 @@
 package com.jiratool.command;
 
+import com.atlassian.jira.rest.client.api.JiraRestClient;
+import com.atlassian.jira.rest.client.api.JiraRestClientFactory;
+import com.atlassian.jira.rest.client.internal.async.AsynchronousJiraRestClientFactory;
+
+import java.net.URI;
 import java.util.regex.Pattern;
 
 public class LogIn implements Command {
 
-    private  String name;
-    private  String password;
+    private String name;
+    private String password;
 
-    private LogIn(String data) {
+    public LogIn(String data) {
         if (data == null) {
             throw new NullPointerException();
         }
@@ -32,4 +37,13 @@ public class LogIn implements Command {
                     }
                 });
     }
+
+    @Override
+    public synchronized void execute() {
+        JiraRestClientFactory factory = new AsynchronousJiraRestClientFactory();
+        URI uri = URI.create(System.getProperty("jira.url", ""));
+        JiraRestClient client = factory.createWithBasicHttpAuthentication(uri, this.name, this.password);
+        Context.getInstance().add("client", client);
+    }
+
 }

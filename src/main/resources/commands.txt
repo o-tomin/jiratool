@@ -1,0 +1,2 @@
+login name=atomin;password=l3S0p!lk@
+logtime jiraId=MCMR12345;date=11/12/2018;time=1h
