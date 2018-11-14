@@ -1,2 +1,2 @@
-login name=atomin;password=l3S0p!lk@
-logtime jiraId=MCMR12345;date=11/12/2018;time=1h
+login$      name=atomin;password=l3S0p!lk@
+logtime$    issueId=MCMR-16448;startDate=13/11/2018 09:30:00;minutes=1

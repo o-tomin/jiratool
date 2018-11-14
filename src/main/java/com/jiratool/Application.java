@@ -83,7 +83,7 @@ public class Application {
             toFill = new ArrayList<>();
         }
         for (int i = 0; i < commands.size(); i++) {
-            String[] line = commands.get(i).split(" ");
+            String[] line = commands.get(i).split("\\$");
             toFill.add(initCommand(line[0].trim(), line[1].trim(), i + 1));
         }
     }
@@ -91,7 +91,7 @@ public class Application {
     private static Command initCommand(String command, String data, int line) {
         switch (command.toLowerCase()) {
             case "login" : return new LogIn(data);
-            //case "logtime" : return new LogTime(data);
+            case "logtime" : return new LogTime(data);
             default: return () ->
                 System.out.println(
                         String.format("[WARN] Unknown command executed: {line=%d;command=%s;data=%s}", line, command, data));
