@@ -70,6 +70,6 @@ public class LogTime implements Command{
                 .setComment(comment != null ? comment : "")
                 .setMinutesSpent(minutes)
                 .build();
-        //issueClient.addWorklog(issue.getWorklogUri(), worklogInput).claim();
+        issueClient.addWorklog(issue.getWorklogUri(), worklogInput).claim();
     }
 }
