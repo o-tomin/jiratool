@@ -1,21 +1,18 @@
 package com.jiratool;
 
-import com.google.common.io.Files;
 import com.jiratool.command.Command;
 import com.jiratool.command.LogIn;
 import com.jiratool.command.LogTime;
-import com.jiratool.util.CommonUtils;
-import com.sun.jersey.json.impl.provider.entity.JSONArrayProvider;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collector;
-import java.util.stream.Collectors;
 
 public class Application {
 
@@ -56,7 +53,7 @@ public class Application {
         try {
             InputStream is = new Object().getClass().getResourceAsStream(PROPERTIES_FILE);
             if (is == null) {
-                is = new FileInputStream(new File("C:\\Users\\atomin\\IdeaProjects\\jiratool\\src\\main\\resources\\global.properties"));
+                is = new FileInputStream(new File("C:\\Users\\oleks_000\\IdeaProjects\\JiraTool\\src\\main\\resources\\global.properties"));
             }
             System.getProperties().load(is);
         } catch (IOException e) {
@@ -69,7 +66,7 @@ public class Application {
             toFill = new ArrayList<>();
         }
         try {
-            if( !toFill.addAll(Files.readLines(new File(path), Charset.defaultCharset()))) {
+            if( !toFill.addAll(Files.readAllLines(Paths.get(path), Charset.defaultCharset()))) {
                 System.err.println("[ERROR] Can't load commands file");
                 throw new IOException("Can't load commands file");
             }
