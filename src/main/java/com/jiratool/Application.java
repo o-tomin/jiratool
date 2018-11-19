@@ -1,6 +1,7 @@
 package com.jiratool;
 
 import com.jiratool.command.Command;
+import com.jiratool.command.JqlActionView;
 import com.jiratool.command.LogIn;
 import com.jiratool.command.LogTime;
 
@@ -34,7 +35,6 @@ public class Application {
         commandsExecutorThread.setName("commandsExecutorThread");
         System.out.println("[INFO] Commands will be executed now!!!");
         commandsExecutorThread.start();
-
     }
 
     private static void validateInput(String[] args) {
@@ -53,7 +53,7 @@ public class Application {
         try {
             InputStream is = new Object().getClass().getResourceAsStream(PROPERTIES_FILE);
             if (is == null) {
-                is = new FileInputStream(new File("C:\\Users\\oleks_000\\IdeaProjects\\JiraTool\\src\\main\\resources\\global.properties"));
+                is = new FileInputStream(new File("C:\\Users\\atomin\\IdeaProjects\\jiratool\\src\\main\\resources\\global.properties"));
             }
             System.getProperties().load(is);
         } catch (IOException e) {
@@ -89,6 +89,7 @@ public class Application {
         switch (command.toLowerCase()) {
             case "login" : return new LogIn(data);
             case "logtime" : return new LogTime(data);
+            case "jqlactionview" : return new JqlActionView(data);
             default: return () ->
                 System.out.println(
                         String.format("[WARN] Unknown command executed: {line=%d;command=%s;data=%s}", line, command, data));

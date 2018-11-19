@@ -2,6 +2,7 @@ package com.jiratool.command;
 
 import com.atlassian.jira.rest.client.api.JiraRestClient;
 import com.atlassian.jira.rest.client.api.JiraRestClientFactory;
+import com.atlassian.jira.rest.client.internal.async.AsynchronousJiraRestClient;
 import com.atlassian.jira.rest.client.internal.async.AsynchronousJiraRestClientFactory;
 
 import java.net.URI;
@@ -21,7 +22,12 @@ public class LogIn implements Command {
         Pattern.compile(";")
                 .splitAsStream(data)
                 .flatMap( arg -> Pattern.compile("(?<==)").splitAsStream(arg))
+                .map(String::trim)
                 .forEach(arg -> {
+
+                    if(arg.startsWith("requestInput")){
+
+                    }
 
                     if (name[0]) {
                         this.name = arg;
@@ -44,6 +50,7 @@ public class LogIn implements Command {
         URI uri = URI.create(System.getProperty("jira.url", ""));
         JiraRestClient client = factory.createWithBasicHttpAuthentication(uri, this.name, this.password);
         Context.getInstance().add("client", client);
+        Context.getInstance().add("name", this.name);
     }
 
 }
