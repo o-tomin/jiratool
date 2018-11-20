@@ -5,16 +5,22 @@ import com.atlassian.jira.rest.client.api.JiraRestClient;
 import com.atlassian.jira.rest.client.api.domain.Issue;
 import com.atlassian.jira.rest.client.api.domain.SearchResult;
 import com.atlassian.jira.rest.client.api.domain.Worklog;
+import com.jiratool.data.SmartItem;
 import com.jiratool.util.CommonUtils;
 import org.joda.time.DateTime;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 public class JqlActionView implements Command {
 
-    private static final HashMap<String, Object> VIEW_CASH = new HashMap<>();
+    private static final int DATE_KEY = 1;
+    private static final int ISSUE_KEY_KEY = 2;
+    private static final int ISSUE_SUMMERY_KEY = 3;
+    private static final int TIME_SPEND_KEY = 4;
+    private static final int TIME_SPEND_PER_DAY_KEY = 5;
 
     private static final int ACTION_ITEM_ID_LENGTH = 3;
     private static final int DATE_LENGTH = 10;
@@ -33,6 +39,7 @@ public class JqlActionView implements Command {
     private String tableLineSeparator;
     private String tableLineFormat;
     private final List<String> TABLE = new ArrayList<>();
+    private final List<SmartItem> ACTION_ITEMS = new ArrayList<>();
 
     private AtomicInteger actionItemId = new AtomicInteger(0);
 
@@ -74,36 +81,51 @@ public class JqlActionView implements Command {
         List<Issue> issueList = new ArrayList<>();
         issues.iterator().forEachRemaining(issueList::add);
 
-        issueList.stream()
+        ACTION_ITEMS.addAll(issueList.stream()
                 .flatMap(issue -> CommonUtils.copy(issue.getWorklogs()).stream())
                 .filter(worklog -> Objects.equals(worklog.getAuthor().getName(), myName))
                 .sorted(Comparator.comparing(Worklog::getStartDate, DateTime::compareTo))
-                .forEach(worklog -> this.fillTable(issues, worklog));
+                .map(worklog -> toActionItem(issues, worklog))
+                .collect(Collectors.toList()));
 
-        TABLE.forEach(System.out::print);
+//        ACTION_ITEMS.stream().
+//                collect(Collectors.groupingBy(CommonUtils::classifier))
+
+
+        ACTION_ITEMS.forEach(this::printActionItems);
         System.out.printf(tableLineSeparator);
     }
 
-
-
-    private void fillTable(Iterable<Issue> issues, Worklog worklog) {
+    private SmartItem toActionItem(Iterable<Issue> issues, Worklog worklog) {
         Issue issue = findIssueByWorklog(issues, worklog);
+        SmartItem smartItem = new SmartItem(this.actionItemId.addAndGet(1));
+        smartItem.add(DATE_KEY, worklog.getStartDate());
+        smartItem.add(ISSUE_KEY_KEY, issue.getKey());
+        smartItem.add(ISSUE_SUMMERY_KEY, issue.getSummary());
+        smartItem.add(TIME_SPEND_KEY, worklog.getMinutesSpent());
+        smartItem.add(TIME_SPEND_PER_DAY_KEY, null);
+        return smartItem;
+    }
 
-        List<String> actionItemId = CommonUtils.wrapToList(String.valueOf(this.actionItemId.addAndGet(1)), ACTION_ITEM_ID_LENGTH);
-        List<String> printableDate = CommonUtils.wrapToList(convertDateTimeToPrintable(worklog.getStartDate()), DATE_LENGTH);
-        List<String> issueKey = CommonUtils.wrapToList(issue.getKey(), ISSUE_KEY_LENGTH);
-        List<String> summery = CommonUtils.wrapToList(issue.getSummary(), ISSUE_SUMMERY_LENGTH);
-        List<String> timeSpent = CommonUtils.wrapToList(CommonUtils.minutesToPrintableTime(worklog.getMinutesSpent()), TIME_SPEND_LENGTH);
+    private void printActionItems(SmartItem smartItem) {
+        List<String> actionItemId = CommonUtils.wrapToList(String.valueOf(smartItem.getId()), ACTION_ITEM_ID_LENGTH);
+        List<String> printableDate = CommonUtils.wrapToList(convertDateTimeToPrintable((DateTime) smartItem.get(DATE_KEY)), DATE_LENGTH);
+        List<String> issueKey = CommonUtils.wrapToList((String) smartItem.get(ISSUE_KEY_KEY), ISSUE_KEY_LENGTH);
+        List<String> summery = CommonUtils.wrapToList((String) smartItem.get(ISSUE_SUMMERY_KEY), ISSUE_SUMMERY_LENGTH);
+        List<String> timeSpent = CommonUtils.wrapToList(CommonUtils.minutesToPrintableTime((Integer) smartItem.get(TIME_SPEND_KEY)), TIME_SPEND_LENGTH);
+        List<String> timeSpentPerDay = Collections.emptyList();
+        if (smartItem.contains(TIME_SPEND_PER_DAY_KEY))
+            timeSpentPerDay = CommonUtils.wrapToList(CommonUtils.minutesToPrintableTime((Integer) smartItem.get(TIME_SPEND_PER_DAY_KEY)), TIME_SPEND_PER_DAY_LENGTH);
 
-        int linesToAllocate = IntStream.of(actionItemId.size(), printableDate.size(), issueKey.size(), summery.size(), timeSpent.size()).max().orElse(0);
+        int linesToAllocate = IntStream.of(actionItemId.size(), printableDate.size(), issueKey.size(), summery.size(), timeSpent.size(), timeSpentPerDay.size()).max().orElse(0);
         for (int i = 0; i< linesToAllocate; i++) {
-            TABLE.add(String.format(tableLineFormat,
+            System.out.printf(tableLineFormat,
                     CommonUtils.getOrReturn(actionItemId, i, ""),
                     CommonUtils.getOrReturn(printableDate, i, ""),
                     CommonUtils.getOrReturn(issueKey, i, ""),
                     CommonUtils.getOrReturn(summery, i, ""),
                     CommonUtils.getOrReturn(timeSpent, i, ""),
-                    ""));
+                    CommonUtils.getOrReturn(timeSpentPerDay, i, ""));
         }
     }
 
